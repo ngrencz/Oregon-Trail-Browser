@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OREGON TRAIL (1971 Mainframe Recreation)</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #33ff33;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        #terminal {
+            max-width: 800px;
+            margin: 0 auto;
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+        #output {
+            margin-bottom: 20px;
+        }
+        #input-line {
+            display: flex;
+        }
+        #prompt {
+            color: #33ff33;
+            margin-right: 10px;
+        }
+        #user-input {
+            background: transparent;
+            border: none;
+            color: #33ff33;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            outline: none;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div id="terminal">
+    <div id="output"></div>
+    <div id="input-line">
+        <span id="prompt">></span>
+        <input type="text" id="user-input" autofocus autocomplete="off">
+    </div>
+</div>
+
+<script>
+    const outputDiv = document.getElementById('output');
+    const userInput = document.getElementById('user-input');
+    
+    let gameState = 'WELCOME';
+    let cash = 700;
+    let supplies = { oxen: 0, food: 0, clothing: 0, ammo: 0, med: 0 };
+    let miles = 0;
+    let turn = 1;
+    let dates = ["March 29", "April 12", "April 26", "May 10", "May 24", "June 7", "June 21", "July 5", "July 19", "August 2", "August 16", "August 30", "September 13", "September 27", "October 11", "October 25", "November 8", "November 22", "December 6", "December 20"];
+    
+    function print(text) {
+        outputDiv.innerText += text + '\n';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function clearInput() {
+        userInput.value = '';
+    }
+
+    function initGame() {
+        print("OREGON TRAIL (1971 ORIGINAL TEXT MAIN FRAME)");
+        print("--------------------------------------------");
+        print("DO YOU WANT INSTRUCTIONS? (YES OR NO)");
+        gameState = 'INSTRUCTIONS';
+    }
+
+    userInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            let input = userInput.value.trim().toUpperCase();
+            print("> " + userInput.value);
+            clearInput();
+            handleInput(input);
+        }
+    });
+
+    function handleInput(input) {
+        switch(gameState) {
+            case 'INSTRUCTIONS':
+                if (input === 'YES' || input === 'Y') {
+                    print("THIS PROGRAM SIMULATES A TRIP OVER THE OREGON TRAIL FROM\nINDEPENDENCE, MISSOURI TO OREGON CITY, OREGON IN 1847.\nYOUR FAMILY OF FIVE WILL COVER THE 2040 MILE OREGON TRAIL\nIN 5 TO 6 MONTHS -- IF YOU MAKE IT ALIVE.\n");
+                }
+                print("TOTAL BUDGET IS \$700. YOU MUST ALLOCATE YOUR SPENDING:\n");
+                print("HOW MUCH DO YOU WANT TO SPEND ON YOUR TEAM (OXEN)?");
+                gameState = 'BUY_OXEN';
+                break;
+                
+            case 'BUY_OXEN':
+                let amt = parseInt(input) || 0;
+                if (amt < 200 || amt > 300) {
+                    print("YOU MUST SPEND BETWEEN 200 AND 300 DOLLARS ON YOUR TEAM.");
+                    break;
+                }
+                supplies.oxen = amt;
+                cash -= amt;
+                print(`CASH LEFT: $${cash}`);
+                print("HOW MUCH DO YOU WANT TO SPEND ON FOOD?");
+                gameState = 'BUY_FOOD';
+                break;
+
+            case 'BUY_FOOD':
+                let foodAmt = parseInt(input) || 0;
+                if (foodAmt < 0 || foodAmt > cash) {
+                    print("INVALID AMOUNT."); break;
+                }
+                supplies.food = foodAmt;
+                cash -= foodAmt;
+                print(`CASH LEFT: $${cash}`);
+                print("HOW MUCH DO YOU WANT TO SPEND ON CLOTHING?");
+                gameState = 'BUY_CLOTHING';
+                break;
+
+            case 'BUY_CLOTHING':
+                let clothAmt = parseInt(input) || 0;
+                if (clothAmt < 0 || clothAmt > cash) {
+                    print("INVALID AMOUNT."); break;
+                }
+                supplies.clothing = clothAmt;
+                cash -= clothAmt;
+                print(`CASH LEFT: $${cash}`);
+                print("HOW MUCH DO YOU WANT TO SPEND ON AMMUNITION?");
+                gameState = 'BUY_AMMO';
+                break;
+
+            case 'BUY_AMMO':
+                let ammoAmt = parseInt(input) || 0;
+                if (ammoAmt < 0 || ammoAmt > cash) {
+                    print("INVALID AMOUNT."); break;
+                }
+                supplies.ammo = ammoAmt * 50; // \$1 buys 50 rounds
+                cash -= ammoAmt;
+                print(`CASH LEFT: $${cash}`);
+                print("HOW MUCH DO YOU WANT TO SPEND ON MEDICAL SUPPLIES?");
+                gameState = 'BUY_MED';
+                break;
+
+            case 'BUY_MED':
+                let medAmt = parseInt(input) || 0;
+                if (medAmt < 0 || medAmt > cash) {
+                    print("INVALID AMOUNT."); break;
+                }
+                supplies.med = medAmt;
+                cash -= medAmt;
+                print(`TOTAL CASH LEFT TO TRAVEL: $${cash}\n`);
+                startTurn();
+                break;
+
+            case 'CHOOSE_ACTION':
+                if (input === '1') {
+                    processTurn(1); // Travel
+                } else if (input === '2') {
+                    processTurn(2); // Rest
+                } else if (input === '3') {
+                    huntPhase();    // Hunt
+                } else {
+                    print("ENTER 1, 2, OR 3.");
+                }
+                break;
+
+            case 'HUNTING':
+                // 1971 Hunting mechanic relied on typing a word quickly
+                let endTime = Date.now();
+                let timeTaken = (endTime - huntStartTime) / 1000;
+                if (input === 'BANG' && timeTaken < 2.5) {
+                    print(`RIGHT ON THE MARK! YOU GOT 60 LBS OF FOOD. TIMING: ${timeTaken.toFixed(2)} SECONDS.`);
+                    supplies.food += 60;
+                } else {
+                    print(`MISSED! OR YOU WERE TOO SLOW. TIMING: ${timeTaken.toFixed(2)} SECONDS.`);
+                }
+                supplies.ammo -= 10;
+                gameState = 'CHOOSE_ACTION';
+                showTurnOptions();
+                break;
+        }
+    }
+
+    function startTurn() {
+        if (miles >= 2040) {
+            print("CONGRATULATIONS! YOU HAVE WIN THE TRAIL AND REACHED OREGON CITY!");
+            gameState = 'GAME_OVER';
+            return;
+        }
+        if (turn >= dates.length) {
+            print("YOU TOOK TOO LONG. WINTER HAS SET IN. YOU DIED OF EXPOSURE.");
+            gameState = 'GAME_OVER';
+            return;
+        }
+        print(`\nCURRENT DATE: ${dates[turn - 1]}`);
+        print(`TOTAL MILES TRAVELED: ${miles}`);
+        print(`INVENTORY: Oxen: $${supplies.oxen}, Food: ${supplies.food} lbs, Clothing: $${supplies.clothing}, Ammo: ${supplies.ammo} rds`);
+        showTurnOptions();
+    }
+
+    function showTurnOptions() {
+        print("\nWHAT IS YOUR CHOICE?\n1) CONTINUE TRAIL\n2) REST AT OUTPOST\n3) HUNT FOR FOOD");
+        gameState = 'CHOOSE_ACTION';
+    }
+
+    let huntStartTime = 0;
+    function huntPhase() {
+        if (supplies.ammo < 10) {
+            print("NOT ENOUGH AMMUNITION TO HUNT.");
+            showTurnOptions();
+            return;
+        }
+        print("TYPE THE WORD 'BANG' EXTREMELY FAST AND PRESS ENTER NOW!");
+        huntStartTime = Date.now();
+        gameState = 'HUNTING';
+    }
+
+    function processTurn(actionType) {
+        // Simple 1971 mathematical loops for tracking events
+        if (actionType === 1) {
+            let progress = Math.floor(Math.random() * 40) + 30;
+            miles += progress;
+            print(`YOU TRAVELED ${progress} MILES.`);
+            supplies.food -= (20 + Math.floor(Math.random() * 10));
+        } else if (actionType === 2) {
+            print("YOU RESTED AND GAINED HEALTH, BUT CONSUMED SUPPLIES.");
+            supplies.food -= 15;
+        }
+
+        // Simulating random 1971 mainframe hazards
+        let hazard = Math.random();
+        if (hazard < 0.15) {
+            print("A WAGON WHEEL BROKE! LOSS OF TIME AND MEDICAL EXPENSE.");
+            supplies.med -= 5;
+        } else if (hazard < 0.30) {
+            print("YOUR WAGON PARTY HAS CONTRACTED DYSENTERY.");
+            supplies.food -= 10;
+            supplies.med -= 5;
+        }
+
+        if (supplies.food <= 0) {
+            print("YOUR PARTY HAS STARVED TO DEATH.");
+            gameState = 'GAME_OVER';
+            return;
+        }
+
+        turn++;
+        startTurn();
+    }
+
+    initGame();
+</script>
+
+</body>
+</html>
