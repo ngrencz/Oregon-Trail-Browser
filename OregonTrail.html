@@ -31,13 +31,18 @@
     <canvas id="jsdos"></canvas>
 
     <script>
-        // Tell JS-DOS to boot up inside the canvas element
-        jsdos.dosbox.fromCanvas("jsdos").ready(function (fs, main) {
-            // Unzip our game file in the browser
+        // Force GitHub to use the external JS-DOS engine files
+        Dos(document.getElementById("jsdos"), { 
+            wdosboxUrl: "https://js-dos.com/6.22/current/wdosbox.js",
+            wasmUrl: "https://js-dos.com/6.22/current/wdosbox.wasm"
+        }).ready(function (fs, main) {
+            
+            // Unzip the game file
             fs.extract("oregontrail.zip").then(function () {
-                // Type "OREGON.EXE" into the virtual DOS prompt and hit enter
-                main(["-c", "OREGON.EXE"]);
+                // Run the game (dropping the .EXE just to be safe)
+                main(["-c", "OREGON"]);
             });
+            
         });
     </script>
 
