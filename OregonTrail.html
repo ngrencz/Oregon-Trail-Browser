@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Oregon Trail (Classic)</title>
+    <!-- Load the JS-DOS Emulator -->
+    <script src="https://js-dos.com/6.22/current/js-dos.js"></script>
+    <style>
+        body {
+            background-color: #000;
+            color: #33ff00;
+            font-family: monospace;
+            text-align: center;
+            margin-top: 50px;
+        }
+        /* Lock the game screen size */
+        canvas {
+            width: 640px;
+            height: 400px;
+            border: 2px solid #33ff00;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>The Oregon Trail</h1>
+    <p>Click the black screen below to start the emulator.</p>
+
+    <!-- The screen where the game will render -->
+    <canvas id="jsdos"></canvas>
+
+    <script>
+        // Tell JS-DOS to boot up inside the canvas element
+        jsdos.dosbox.fromCanvas("jsdos").ready(function (fs, main) {
+            // Unzip our game file in the browser
+            fs.extract("oregontrail.zip").then(function () {
+                // Type "OREGON.EXE" into the virtual DOS prompt and hit enter
+                main(["-c", "OREGON.EXE"]);
+            });
+        });
+    </script>
+
+</body>
+</html>
